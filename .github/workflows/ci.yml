@@ -28,16 +28,19 @@ jobs:
         run: mvn checkstyle:check
 
       # Stage 3: SCA (Software Composition Analysis)
-      # Scans pom.xml dependencies for known CVEs (Vulnerabilities)
       - name: OWASP Dependency Check
         uses: dependency-check/Dependency-Check_Action@main
-        id: dependency-check
+        # We clear the JAVA_HOME variable for this step so the container doesn't get confused
+        env:
+          JAVA_HOME: ""
         with:
           project: 'Student-GPA-Calculator'
           path: '.'
           format: 'HTML'
-          # This aligns with the proposal: fail if high severity issues are found
-          failOnCVSS: 7
+          # We moved the fail condition into 'args'
+          args: >
+            --failOnCVSS 7
+            --enableExperimental
 
       # Stage 4 & 5: SAST (CodeQL) & Packaging
       # CodeQL must be initialized before the build and analyzed after.
