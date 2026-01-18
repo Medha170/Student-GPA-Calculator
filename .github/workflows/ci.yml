@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Stage 1: Source & Environment Setup [cite: 56]
+      # Stage 1: Source & Environment Setup
       - name: Checkout Code
         uses: actions/checkout@v3
 
@@ -23,12 +23,32 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # Stage 2: Linting (Code Quality Check)
+      # Stage 2: Linting
       - name: Run Checkstyle (Linting)
         run: mvn checkstyle:check
 
-      # Stage 5: Packaging (Skip Tests for now)
-      # We are jumping to packaging to ensure the code compiles.
-      # We will insert Security/Testing stages in between later.
+      # Stage 3: SCA (Software Composition Analysis)
+      # Scans pom.xml dependencies for known CVEs (Vulnerabilities)
+      - name: OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        id: dependency-check
+        with:
+          project: 'Student-GPA-Calculator'
+          path: '.'
+          format: 'HTML'
+          # This aligns with the proposal: fail if high severity issues are found
+          failOnCVSS: 7
+
+      # Stage 4 & 5: SAST (CodeQL) & Packaging
+      # CodeQL must be initialized before the build and analyzed after.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java
+
+      # This is your Stage 5 (Packaging), now monitored by CodeQL
       - name: Build with Maven
         run: mvn clean package -DskipTests
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
