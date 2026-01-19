@@ -28,9 +28,10 @@ jobs:
         run: mvn checkstyle:check
 
       # Stage 3: SCA (Software Composition Analysis)
-      # NOW running via Maven directly - No Docker/JAVA_HOME conflicts!
       - name: OWASP Dependency Check (SCA)
         run: mvn org.owasp:dependency-check-maven:check
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
 
       # Stage 4: SAST (Initialize CodeQL)
       - name: Initialize CodeQL
