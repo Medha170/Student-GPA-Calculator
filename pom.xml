@@ -108,7 +108,7 @@
                 <version>9.0.8</version>
 
                 <configuration>
-                    <autoUpdate>false</autoUpdate>
+                    <autoUpdate>true</autoUpdate>
                     <failBuildOnCVSS>7</failBuildOnCVSS>
                     <formats>
                         <format>HTML</format>
