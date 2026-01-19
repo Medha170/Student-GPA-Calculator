@@ -23,25 +23,34 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # Stage 2: Linting (Code Quality Check)
+      # Stage 2: Linting
       - name: Run Checkstyle (Linting)
         run: mvn checkstyle:check
 
-      # Stage 3: SCA (Software Composition Analysis)
-      - name: OWASP Dependency Check (SCA)
-        run: mvn dependency-check:check
+      # Stage 3: Build (Resolve dependencies)
+      - name: Build with Maven
+        run: mvn clean package -DskipTests
 
+      # Stage 4: SCA (OWASP Dependency-Check)
+      - name: OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@v3.0.5
+        with:
+          project: 'Student-GPA-Calculator'
+          path: '.'
+          format: 'HTML'
+          out: 'dependency-check-report'
 
-      # Stage 4: SAST (Initialize CodeQL)
+      - name: Upload OWASP Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-dependency-check-report
+          path: dependency-check-report
+
+      # Stage 5: SAST (CodeQL)
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: java
 
-      # Stage 5: Packaging
-      - name: Build with Maven
-        run: mvn clean package -DskipTests
-
-      # Stage 4 (Continued): SAST Analysis
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
