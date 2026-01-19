@@ -9,10 +9,19 @@ on:
 
 jobs:
   build-and-lint:
+    name: Build, Lint, and Security Scan
     runs-on: ubuntu-latest
 
+    # REQUIRED: Permissions for CodeQL to upload security results
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
     steps:
-      # Stage 1: Source & Environment Setup
+      # ----------------------------------------------------------------
+      # Stage 1: Source & Environment Setup [cite: 56]
+      # ----------------------------------------------------------------
       - name: Checkout Code
         uses: actions/checkout@v3
 
@@ -23,15 +32,23 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # Stage 2: Linting
-      - name: Run Checkstyle (Linting)
+      # ----------------------------------------------------------------
+      # Stage 2: Linting (Code Quality Check) [cite: 61]
+      # ----------------------------------------------------------------
+      - name: Run Checkstyle
+        # Enforces coding standards before any compilation happens [cite: 64]
         run: mvn checkstyle:check
 
-      # Stage 3: Build (Resolve dependencies)
-      - name: Build with Maven
-        run: mvn clean package -DskipTests
+      # ----------------------------------------------------------------
+      # Dependency Resolution
+      # ----------------------------------------------------------------
+      - name: Resolve Dependencies
+        # explicitly downloads dependencies before scanning them
+        run: mvn dependency:resolve
 
-      # Stage 4: SCA (OWASP Dependency-Check)
+      # ----------------------------------------------------------------
+      # Stage 3: SCA (Software Composition Analysis) [cite: 67]
+      # ----------------------------------------------------------------
       - name: OWASP Dependency-Check
         uses: dependency-check/Dependency-Check_Action@main
         with:
@@ -39,13 +56,27 @@ jobs:
           path: '.'
           format: 'HTML'
           out: 'dependency-check-report'
-        continue-on-error: true
+        # Removed 'continue-on-error: true' because the proposal states:
+        # "if any stage fails, the pipeline halts immediately"
 
-      # Stage 5: SAST (CodeQL)
+      # ----------------------------------------------------------------
+      # Stage 4: SAST (CodeQL Init) [cite: 74]
+      # ----------------------------------------------------------------
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: java
 
+      # ----------------------------------------------------------------
+      # Stage 5: Packaging [cite: 79]
+      # ----------------------------------------------------------------
+      # Technical Note: For Java, CodeQL MUST run *during* the build.
+      # We place the packaging command here so CodeQL can analyze the compilation.
+      - name: Build with Maven (Package)
+        run: mvn clean package -DskipTests
+
+      # ----------------------------------------------------------------
+      # Stage 4: SAST (CodeQL Analyze)
+      # ----------------------------------------------------------------
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
