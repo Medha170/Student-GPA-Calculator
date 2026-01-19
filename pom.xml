@@ -105,7 +105,7 @@
             <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
-                <version>9.0.9</version>  <executions>
+                <version>9.0.8</version>  <executions>
                 <execution>
                     <goals>
                         <goal>check</goal>
@@ -117,6 +117,7 @@
                     <formats>
                         <format>HTML</format>
                     </formats>
+                    <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
                 </configuration>
             </plugin>
         </plugins>
