@@ -27,11 +27,11 @@ jobs:
       - name: Run Checkstyle (Linting)
         run: mvn checkstyle:check
 
-      # Stage 3: SCA (Software Composition Analysis)
+        # Stage 3: SCA (Software Composition Analysis)
       - name: OWASP Dependency Check (SCA)
-        run: mvn org.owasp:dependency-check-maven:check
-        env:
-          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: >
+          mvn org.owasp:dependency-check-maven:check
+          -Dnvd.api.key=${{ secrets.NVD_API_KEY }}
 
       # Stage 4: SAST (Initialize CodeQL)
       - name: Initialize CodeQL
