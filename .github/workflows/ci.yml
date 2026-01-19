@@ -12,7 +12,6 @@ jobs:
     name: Build, Lint, and Security Scan
     runs-on: ubuntu-latest
 
-    # REQUIRED: Permissions for CodeQL to upload security results
     permissions:
       actions: read
       contents: read
@@ -20,7 +19,7 @@ jobs:
 
     steps:
       # ----------------------------------------------------------------
-      # Stage 1: Source & Environment Setup [cite: 56]
+      # Stage 1: Source & Environment Setup
       # ----------------------------------------------------------------
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -33,34 +32,21 @@ jobs:
           cache: maven
 
       # ----------------------------------------------------------------
-      # Stage 2: Linting (Code Quality Check) [cite: 61]
+      # Stage 2: Linting (Code Quality Check)
       # ----------------------------------------------------------------
       - name: Run Checkstyle
-        # Enforces coding standards before any compilation happens [cite: 64]
         run: mvn checkstyle:check
 
       # ----------------------------------------------------------------
-      # Dependency Resolution
+      # Stage 3: SCA (Software Composition Analysis)
       # ----------------------------------------------------------------
-      - name: Resolve Dependencies
-        # explicitly downloads dependencies before scanning them
-        run: mvn dependency:resolve
-
-      # ----------------------------------------------------------------
-      # Stage 3: SCA (Software Composition Analysis) [cite: 67]
-      # ----------------------------------------------------------------
+      # FIX: We use the Maven plugin directly instead of the Docker Action.
+      # This runs directly on the runner, using the correctly configured JDK 17.
       - name: OWASP Dependency-Check
-        uses: dependency-check/Dependency-Check_Action@main
-        with:
-          project: 'Student-GPA-Calculator'
-          path: '.'
-          format: 'HTML'
-          out: 'dependency-check-report'
-        # Removed 'continue-on-error: true' because the proposal states:
-        # "if any stage fails, the pipeline halts immediately"
+        run: mvn org.owasp:dependency-check-maven:check -Dformat=HTML
 
       # ----------------------------------------------------------------
-      # Stage 4: SAST (CodeQL Init) [cite: 74]
+      # Stage 4: SAST (CodeQL Init)
       # ----------------------------------------------------------------
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
@@ -68,15 +54,14 @@ jobs:
           languages: java
 
       # ----------------------------------------------------------------
-      # Stage 5: Packaging [cite: 79]
+      # Stage 5: Packaging
       # ----------------------------------------------------------------
-      # Technical Note: For Java, CodeQL MUST run *during* the build.
-      # We place the packaging command here so CodeQL can analyze the compilation.
+      # CodeQL watches this build step to analyze the code
       - name: Build with Maven (Package)
         run: mvn clean package -DskipTests
 
       # ----------------------------------------------------------------
-      # Stage 4: SAST (CodeQL Analyze)
+      # Stage 4 (Continued): SAST (CodeQL Analyze)
       # ----------------------------------------------------------------
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
