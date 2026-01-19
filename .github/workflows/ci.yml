@@ -23,35 +23,25 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # Stage 2: Linting
+      # Stage 2: Linting (Code Quality Check)
       - name: Run Checkstyle (Linting)
         run: mvn checkstyle:check
 
       # Stage 3: SCA (Software Composition Analysis)
-      - name: OWASP Dependency Check
-        uses: dependency-check/Dependency-Check_Action@main
-        # We clear the JAVA_HOME variable for this step so the container doesn't get confused
-        env:
-          JAVA_HOME: ""
-        with:
-          project: 'Student-GPA-Calculator'
-          path: '.'
-          format: 'HTML'
-          # We moved the fail condition into 'args'
-          args: >
-            --failOnCVSS 7
-            --enableExperimental
+      # NOW running via Maven directly - No Docker/JAVA_HOME conflicts!
+      - name: OWASP Dependency Check (SCA)
+        run: mvn org.owasp:dependency-check-maven:check
 
-      # Stage 4 & 5: SAST (CodeQL) & Packaging
-      # CodeQL must be initialized before the build and analyzed after.
+      # Stage 4: SAST (Initialize CodeQL)
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: java
 
-      # This is your Stage 5 (Packaging), now monitored by CodeQL
+      # Stage 5: Packaging
       - name: Build with Maven
         run: mvn clean package -DskipTests
 
+      # Stage 4 (Continued): SAST Analysis
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
