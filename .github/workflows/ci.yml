@@ -40,9 +40,10 @@ jobs:
       # ----------------------------------------------------------------
       # Stage 3: SCA (Software Composition Analysis)
       # ----------------------------------------------------------------
-      # FIX: We use the Maven plugin directly instead of the Docker Action.
-      # This runs directly on the runner, using the correctly configured JDK 17.
       - name: OWASP Dependency-Check
+        # We pass the secret as an environment variable here
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: mvn org.owasp:dependency-check-maven:check -Dformat=HTML
 
       # ----------------------------------------------------------------
