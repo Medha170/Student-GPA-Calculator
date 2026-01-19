@@ -106,6 +106,7 @@
                     <formats>
                         <format>HTML</format>
                     </formats>
+                    <ossindexAnalyzerEnabled>false</ossindexAnalyzerEnabled>
                 </configuration>
                 <executions>
                     <execution>
