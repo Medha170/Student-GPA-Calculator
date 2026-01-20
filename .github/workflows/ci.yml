@@ -94,7 +94,7 @@ jobs:
       - name: Run Container Smoke Test
         # Objective: Ensure container starts and listens on port [cite: 96]
         run: |
-          docker run -d -p 8080:8080 --name gpa-app ${{ secrets.DOCKER_USERNAME }}/student-gpa-calculator:${{ github.sha }}
+          docker run -d -p 8080:8080 --name gpa-app ${{ secrets.DOCKERHUB_USERNAME }}/student-gpa-calculator:${{ github.sha }}
                    
           echo "Waiting for container to start..."
           sleep 20 # Give Spring Boot time to initialize
