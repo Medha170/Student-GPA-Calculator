@@ -66,3 +66,9 @@ jobs:
       # ----------------------------------------------------------------
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
+
+      # ----------------------------------------------------------------
+      # Stage 6: Unit Testing
+      # ----------------------------------------------------------------
+      - name: Run Unit Tests
+        run: mvn test

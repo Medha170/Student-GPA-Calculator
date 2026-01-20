@@ -38,7 +38,14 @@ public class GradeService {
             totalCredits += course.getCredits();
         }
 
-        return totalCredits == 0 ? 0.0 : totalPoints / totalCredits;
+        if (totalCredits == 0) {
+            return 0.0;
+        }
+
+        double gpa = totalPoints / totalCredits;
+
+        // ✅ Round to 2 decimal places
+        return Math.round(gpa * 100.0) / 100.0;
     }
 
     public String calculateGrade(double gpa) {
