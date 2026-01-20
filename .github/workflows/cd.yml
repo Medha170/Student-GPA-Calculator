@@ -1,0 +1,50 @@
+name: CD Pipeline - Deploy to Local K8s
+
+on:
+  # Trigger 1: Automatic (After CI passes)
+  workflow_run:
+    workflows: ["CI Pipeline - Student GPA Calculator"]
+    types:
+      - completed
+    branches:
+      - main
+
+  # Trigger 2: Manual (Click button in GitHub Actions tab)
+  workflow_dispatch:
+
+jobs:
+  deploy-to-local-cluster:
+    runs-on: self-hosted
+
+    # LOGIC UPDATE:
+    # If triggered by 'workflow_run', we MUST check if CI succeeded.
+    # If triggered by 'workflow_dispatch', we assume you know what you are doing, so we skip the check.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout Manifests
+        uses: actions/checkout@v3
+
+      - name: Inject Secrets into Manifests
+        run: |
+          sed -i "s/DOCKERHUB_USERNAME_PLACEHOLDER/${{ secrets.DOCKERHUB_USERNAME }}/g" k8s/deployment.yaml
+
+      - name: Deploy to K3s Cluster
+        run: |
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          
+          echo "Applying Kubernetes Manifests..."
+          # Force apply to update image even if tags haven't changed
+          sudo kubectl apply -f k8s/deployment.yaml
+          sudo kubectl apply -f k8s/service.yaml
+          
+          # Force a restart to pick up the new image (since we reuse the 'latest' tag)
+          sudo kubectl rollout restart deployment/student-gpa-calculator
+
+      - name: Verify Deployment Health
+        run: |
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          sudo kubectl rollout status deployment/student-gpa-calculator
+          echo "Deployment Successful!"
+          sudo kubectl get pods
+          sudo kubectl get services

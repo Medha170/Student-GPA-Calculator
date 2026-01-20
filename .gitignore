@@ -33,3 +33,7 @@ build/
 .vscode/
 
 .env
+
+# Ignore Vagrant local state
+.vagrant/
+*.log

@@ -1,0 +1,48 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  # 1. OS Image: Ubuntu 22.04 LTS
+  config.vm.box = "bento/ubuntu-22.04"
+  config.vm.hostname = "k8s-runner-node"
+
+  # 2. Network: Give it a private IP so we can talk to it
+  config.vm.network "private_network", ip: "192.168.56.10"
+
+  # 3. Hardware Resources
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = "4096" # 4GB RAM
+    vb.cpus = 2        # 2 CPU Cores
+    vb.name = "Student-GPA-K8s-Cluster"
+  end
+
+  # 4. Automate Installation (Docker & Kubernetes/K3s)
+  config.vm.provision "shell", inline: <<-SHELL
+    echo "--------------------------------------------------"
+    echo "Step 1: Installing Docker..."
+    echo "--------------------------------------------------"
+    sudo apt-get update
+    sudo apt-get install -y ca-certificates curl gnupg lsb-release
+    sudo mkdir -p /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+      $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    sudo apt-get update
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+    sudo usermod -aG docker vagrant
+
+    echo "--------------------------------------------------"
+    echo "Step 2: Installing K3s (Lightweight Kubernetes)..."
+    echo "--------------------------------------------------"
+    # We install K3s and configure it so the 'vagrant' user can run kubectl commands
+    curl -sfL https://get.k3s.io | sh -
+    mkdir -p /home/vagrant/.kube
+    sudo cp /etc/rancher/k3s/k3s.yaml /home/vagrant/.kube/config
+    sudo chown vagrant:vagrant /home/vagrant/.kube/config
+    echo "export KUBECONFIG=/home/vagrant/.kube/config" >> /home/vagrant/.bashrc
+
+    echo "--------------------------------------------------"
+    echo "Step 3: Ready!"
+    echo "--------------------------------------------------"
+  SHELL
+end
