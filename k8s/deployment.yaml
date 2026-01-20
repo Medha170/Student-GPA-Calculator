@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: student-gpa-calculator
+  labels:
+    app: student-gpa-calculator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: student-gpa-calculator
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: student-gpa-calculator
+    spec:
+      containers:
+        - name: student-gpa-calculator
+          # SECURE: We use a placeholder here. The pipeline will replace this.
+          image: DOCKER_USERNAME_PLACEHOLDER/student-gpa-calculator:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
