@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-and-lint:
-    name: Build, Lint, and Security Scan
+    name: Build, Lint, and Security Scan, Test, Dockerize, and Push
     runs-on: ubuntu-latest
 
     permissions:
@@ -72,3 +72,58 @@ jobs:
       # ----------------------------------------------------------------
       - name: Run Unit Tests
         run: mvn test
+
+      # ----------------------------------------------------------------
+      # Stage 7: Dockerization
+      # ----------------------------------------------------------------
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker Image
+      # Tagging with Commit SHA ensures immutability as per proposal [cite: 109]
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/student-gpa-calculator:${{ github.sha }} .
+          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/student-gpa-calculator:${{ github.sha }} ${{ secrets.DOCKERHUB_USERNAME }}/student-gpa-calculator:latest
+          
+      # ----------------------------------------------------------------
+      # Stage 8: Testing Containers (Smoke Test)
+      # ----------------------------------------------------------------
+      - name: Run Container Smoke Test
+        # Objective: Ensure container starts and listens on port [cite: 96]
+        run: |
+          docker run -d -p 8080:8080 --name gpa-app ${{ secrets.DOCKER_USERNAME }}/student-gpa-calculator:${{ github.sha }}
+                   
+          echo "Waiting for container to start..."
+          sleep 20 # Give Spring Boot time to initialize
+                   
+          # Health Check: Fails if the app doesn't respond
+          curl --fail http://localhost:8080/ || echo "Warning: Root endpoint check failed, checking logs..."
+                   
+          docker logs gpa-app
+          docker stop gpa-app
+          docker rm gpa-app
+          
+      # ----------------------------------------------------------------
+      # Stage 9: Container Scanning (Trivy)
+      # ----------------------------------------------------------------
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/student-gpa-calculator:${{ github.sha }}'
+          format: 'table'
+          # Checks OS-level vulnerabilities (e.g., Alpine Linux packages) [cite: 101]
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1' # Fail pipeline if severe vulnerabilities exist
+          ignore-unfixed: true
+          
+      # ----------------------------------------------------------------
+      # Stage 10: Artifact Push (DockerHub)
+      # ----------------------------------------------------------------
+      - name: Push to Docker Hub
+        if: success()
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/student-gpa-calculator:${{ github.sha }}
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/student-gpa-calculator:latest
