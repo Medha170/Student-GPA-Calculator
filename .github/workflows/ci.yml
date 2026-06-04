@@ -118,6 +118,13 @@ jobs:
           severity: 'CRITICAL,HIGH'
           exit-code: '1' # Fail pipeline if severe vulnerabilities exist
           ignore-unfixed: true
+
+      - name: Push Scan Results to n8n Hook
+        if: always() # Executes even if the previous Trivy scan step found issues
+        run: |
+          curl -X POST "${{ secrets.N8N_WEBHOOK_URL }}" \
+          -H "Content-Type: application/json" \
+          -d @trivy-results.json
           
       # ----------------------------------------------------------------
       # Stage 10: Artifact Push (DockerHub)
